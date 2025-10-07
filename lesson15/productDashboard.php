@@ -5,7 +5,7 @@
 	{
 		header('Location: login.php');
 	}
-  $sql = "SELECT * FROM products";
+  $sql = "SELECT * FROM product";
   $selectUsers = $conn->prepare($sql);
   $selectUsers->execute();
 
@@ -59,7 +59,7 @@
             </a>
           </li>
           <li class="nav-item">
-          <?php foreach ($products_data as $product_data) { ?>
+          <?php foreach ($product_data as $product_data) { ?>
 
             <a class="nav-link" href="profile.php?id=<?= $product_data['id'];?>">
             <?php  } ?>
@@ -81,7 +81,7 @@
 
         include_once('config.php');
 
-        $getUsers = $conn->prepare("SELECT * FROM products");
+        $getUsers = $conn->prepare("SELECT * FROM product");
 
         $getUsers->execute();
 
@@ -101,7 +101,7 @@
             </tr>
           </thead>
           <?php
-            foreach ($products as $product ) {
+            foreach ($product as $products ) {
           ?>
           <tbody>
             <tr> 

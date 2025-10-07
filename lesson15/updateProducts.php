@@ -29,7 +29,7 @@
 
 			$updateSql->execute();
 
-			header('Location: logout.php');
+			header('Location: productDashboard.php');
 		}
 	}
 ?>
