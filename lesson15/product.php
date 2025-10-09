@@ -1,22 +1,23 @@
-<?php
+<?php 
 session_start();
-    include_once('config.php');
+  include_once('config.php');
 
-    if(empty($_SESSION['username']))
-    {
-        header('Location: login.php');
-    }
-    $id = $_GET['id'];
-    $sql = "SELECT * FROM product WHERE id=:id";
-    $selectProduct = $conn->prepare($sql);
-    $selectProduct->bindParam(':id', $id);
-    $selectProduct->execute();
 
-    $product_data = $selectProduct->fetch();
+  if(empty($_SESSION['username']))
+  {
+    header('Location: login.php');
+  }
+  $id = $_GET['id'];
+   $sql = "SELECT * FROM products WHERE id=:id";
+   $selectProduct = $conn->prepare($sql);
+   $selectProduct->bindParam(':id', $id);
+   $selectProduct->execute();
+
+
+   $product_data = $selectProduct->fetch();
 ?>
-
 <?php include("header.php"); ?>
-
+  
 <nav class="navbar navbar-dark fixed-top bg-dark flex-md-nowrap p-0 shadow">
   <a class="navbar-brand col-sm-3 col-md-2 mr-0" href="#">Hello, <i> <?php echo $_SESSION['username']; ?> </i></a>
 
@@ -27,7 +28,6 @@ session_start();
     </li>
   </ul>
 </nav>
-
 <div class="container-fluid">
   <div class="row">
     <nav class="col-md-2 d-none d-md-block bg-light sidebar">
@@ -57,8 +57,7 @@ session_start();
 
       </div>
     </nav>
-    
-    <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
+       <main role="main" class="col-md-9 ml-sm-auto col-lg-10 px-4">
 
 
       <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
@@ -68,20 +67,19 @@ session_start();
       <div class="container">
         <div class="row">
           <div class="col-md-5">
-            <form class="form-profile" action="updateProduct.php" method="post">
+             <form class="form-profile" action="updateProduct.php" method="post">
                 <input type="hidden" name="id" value="<?php echo  $product_data['id'] ?>">
               <span class="text-muted" for='id'>Id</span>
               <input  type="number" class="form-control" id="floatingInput" placeholder="Id" name="id" value="<?php echo  $product_data['id'] ?>" readonly>
 
-               <span class="text-muted" for='title'> Title </span>
+
+              <span class="text-muted" for='title'> Title </span>
               <input class="form-control" type="text" name="title" value="<?php echo $product_data['title'] ?>" required><br>
 
 
               <span class="text-muted"> Description </span>
               <input class="form-control" type="text" name="description" value="<?php echo $product_data['description'] ?>" required><br>
-
-
-              <span class="text-muted"> Quantity </span>
+               <span class="text-muted"> Quantity </span>
               <input class="form-control" type="number" name="quantity" value="<?php echo $product_data['quantity'] ?>" required><br>
 
 

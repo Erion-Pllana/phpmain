@@ -1,11 +1,14 @@
 <?php 
 
+
 require 'config.php';
+
 
 if(isset($_POST['submit']))
 {
   $username = $_POST['username'];
   $password = $_POST['password'];
+
 
   if(empty($username) || empty($password))
   {
@@ -15,6 +18,7 @@ if(isset($_POST['submit']))
     $sql = "SELECT * FROM users WHERE username=:username";
     $insertSql = $conn->prepare($sql);
     $insertSql->bindParam(':username', $username);
+
 
     $insertSql->execute();
     

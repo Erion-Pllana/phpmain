@@ -10,18 +10,18 @@
 		$quantity = $_POST['quantity'];
 		$price = $_POST['price'];
 
-		if(empty($id) || empty($title) || empty($description) || empty($quantity) || empty($price))
+		if(empty($title) || empty($description) || empty($quantity) || empty($price))
 		{
 			echo "You need to fill all the fields.";
-			header( "refresh:2; url=profile.php" ); 
+			header( "refresh:2; url=product.php" );
 		}
 		else
 		{
-			$sql= "UPDATE users SET id=:id, title=:title, description=:description, quantity=:quantity, price=:price WHERE id=:id";
+			$sql= "UPDATE products SET title=:title, description=:description, quantity=:quantity, price=:price WHERE id=:id";
 
 			$updateSql = $conn->prepare($sql);
 
-			$updateSql->bindParam(':id', $id);
+			$updateSql->bindParam(':od', $id);
 			$updateSql->bindParam(':title', $title);
 			$updateSql->bindParam(':description', $description);
 			$updateSql->bindParam(':quantity', $quantiy);

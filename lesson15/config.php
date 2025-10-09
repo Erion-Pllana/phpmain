@@ -4,7 +4,7 @@ session_start();
 $user="root";
 $pass="";
 $server="localhost";
-$dbname="db";
+$db="db";
 
 try {
 	

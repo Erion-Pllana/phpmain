@@ -5,7 +5,7 @@
 	{
 		header('Location: login.php');
 	}
-  $sql = "SELECT * FROM product";
+  $sql = "SELECT * FROM products";
   $selectUsers = $conn->prepare($sql);
   $selectUsers->execute();
 
@@ -59,9 +59,9 @@
             </a>
           </li>
           <li class="nav-item">
-          <?php foreach ($product_data as $product_data) { ?>
+          <?php foreach ($products_data as $products_data) { ?>
 
-            <a class="nav-link" href="profile.php?id=<?= $product_data['id'];?>">
+            <a class="nav-link" href="profile.php?id=<?= $products_data['id'];?>">
             <?php  } ?>
               <span data-feather="file"></span>
               Edit Product
@@ -81,7 +81,7 @@
 
         include_once('config.php');
 
-        $getUsers = $conn->prepare("SELECT * FROM product");
+        $getUsers = $conn->prepare("SELECT * FROM products");
 
         $getUsers->execute();
 
@@ -101,16 +101,16 @@
             </tr>
           </thead>
           <?php
-            foreach ($product as $products ) {
+            foreach ($products as $product ) {
           ?>
           <tbody>
             <tr> 
-              <td> <?= $products['id'] ?> </td>
-              <td> <?= $products['title'] ?> </td>
-              <td> <?= $products['description']  ?> </td> 
-              <td> <?= $products['quantity']  ?> </td> 
-              <td> <?= $products['price']  ?> </td>
-              <td> <?= "<a href='delete.php?id=$products[id]'> Delete</a>| <a href='profile.php?id=$products[id]'> Update </a>"?></td>
+              <td> <?= $product['id'] ?> </td>
+              <td> <?= $product['title'] ?> </td>
+              <td> <?= $product['description']  ?> </td> 
+              <td> <?= $product['quantity']  ?> </td> 
+              <td> <?= $product['price']  ?> </td>
+              <td> <?= "<a href='delete.php?id=$product[id]'> Delete</a>| <a href='profile.php?id=$product[id]'> Update </a>"?></td>
             </tr>
           
             <?php 

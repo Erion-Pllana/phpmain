@@ -11,9 +11,9 @@
             padding:10px 20px;
         }
 
-    </style>
 
-    </head>
+    </style>
+</head>
     <body>
         
         <?php
@@ -24,7 +24,9 @@
             $users=$getUsers->fetchAll();
         ?>
 
+
         <br><br>
+
 
         <table>
             <thead>
@@ -32,7 +34,7 @@
                 <th>Name</th>
                 <th>Surname</th>
                 <th>Email</th>
-            </thead>    
+            </thead>  
             <tbody>
                 <?php 
                     foreach($users as $user){
@@ -49,6 +51,7 @@
             </tbody>
         </table>
         <a href="add.php">Add User</a>
+
 
     </body>
 </html>
