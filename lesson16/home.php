@@ -97,7 +97,7 @@
               <div class="d-flex justify-content-between align-items-center">
                 <div class="btn-group">
                   <a href="details.php?id=<?php echo $movie_data['id']; ?>"  class="btn btn-sm btn-outline-secondary" >View</a>
-<?php if (isset($_SESSION['role']) && $_SESSION['role'] === 'admin'): ?>
+<?php if (isset($_SESSION['admin']) && $_SESSION['admin'] === 'admin'): ?>
   <a href="edit.php?id=<?php echo $movie_data['id'];?>" class="btn btn-sm btn-outline-secondary" > Edit</a>
   <?php endif; ?>
                   
