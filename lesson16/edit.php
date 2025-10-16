@@ -9,10 +9,6 @@
 
    $id = $_GET['id'];
 
-   if(!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
-    header("Location :home.php");
-    exit;
-   }
 
    $sql = "SELECT * FROM movies WHERE id=:id";
    $selectUser = $conn->prepare($sql);
