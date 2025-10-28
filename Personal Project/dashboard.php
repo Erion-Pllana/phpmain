@@ -1,201 +1,190 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-session_start();
-if (!isset($_SESSION["user"])) {
-    header("Location: login.php");
-    exit();
-}
-
 include 'config.php';
+requireLogin();
 
-// Handle new task submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $title = $_POST["title"];
-    $description = $_POST["description"];
-    $category = $_POST["category"];
-    $priority = $_POST["priority"];
-    $due_date = $_POST["due_date"];
-    $status = "Pending";
-    $created_at = date('Y-m-d H:i:s');
+// Get statistics for current user only
+$total_stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE user_id = ?");
+$total_stmt->execute([getCurrentUserId()]);
+$total_tasks = $total_stmt->fetchColumn();
 
-    $sql = "INSERT INTO tasks (title, description, category, priority, due_date, status, created_at)
-            VALUES ('$title', '$description', '$category', '$priority', '$due_date', '$status', '$created_at')";
+$completed_stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE status = 'Completed' AND user_id = ?");
+$completed_stmt->execute([getCurrentUserId()]);
+$completed_tasks = $completed_stmt->fetchColumn();
 
-    if ($conn->query($sql) === TRUE) {
-        header("Location: dashboard.php");
-        exit();
-    } else {
-        echo "Error: " . $conn->error;
-    }
-}
+$pending_stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE status = 'Pending' AND user_id = ?");
+$pending_stmt->execute([getCurrentUserId()]);
+$pending_tasks = $pending_stmt->fetchColumn();
 
-// Fetch tasks
-$tasks = $conn->query("SELECT * FROM tasks ORDER BY due_date ASC");
+// Priority distribution for current user
+$priority_stmt = $pdo->prepare("SELECT priority, COUNT(*) as count FROM tasks WHERE user_id = ? GROUP BY priority");
+$priority_stmt->execute([getCurrentUserId()]);
+$priority_data = $priority_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Recent tasks for current user
+$recent_stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
+$recent_stmt->execute([getCurrentUserId()]);
+$recent_tasks = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// Completion percentage
+$completion_percentage = $total_tasks > 0 ? round(($completed_tasks / $total_tasks) * 100) : 0;
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>TaskFlow Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-    <style>
-        body {
-            margin: 0;
-            background: #f7f8ff;
-            font-family: 'Poppins', sans-serif;
-        }
-
-        header {
-            background: linear-gradient(135deg, #6B73FF, #000DFF);
-            color: white;
-            padding: 20px 40px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        header h2 {
-            margin: 0;
-        }
-
-        .logout {
-            background: white;
-            color: #000DFF;
-            padding: 8px 15px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-        }
-
-        .logout:hover {
-            background: #f4f4f4;
-        }
-
-        .container {
-            padding: 40px;
-        }
-
-        form {
-            background: white;
-            padding: 25px;
-            border-radius: 10px;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-            margin-bottom: 40px;
-        }
-
-        input,
-        textarea,
-        select {
-            width: 100%;
-            padding: 10px;
-            margin: 8px 0;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            font-family: inherit;
-        }
-
-        button {
-            background: #000DFF;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        button:hover {
-            background: #6B73FF;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-            border-radius: 10px;
-            overflow: hidden;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-
-        th,
-        td {
-            padding: 12px 15px;
-            border-bottom: 1px solid #eee;
-        }
-
-        th {
-            background: #000DFF;
-            color: white;
-        }
-
-        tr:hover {
-            background: #f4f6ff;
-        }
-
-        .status-pending {
-            color: #ff9800;
-            font-weight: 600;
-        }
-
-        .status-completed {
-            color: #4CAF50;
-            font-weight: 600;
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quest Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
-
 <body>
-    <header>
-        <h2>🗓️ TaskFlow - Daily Task Manager</h2>
-        <a href="logout.php" class="logout">Logout</a>
-    </header>
-
     <div class="container">
-        <h3>Add New Task</h3>
-        <form method="POST">
-            <input type="text" name="title" placeholder="Task title" required>
-            <textarea name="description" placeholder="Task description" rows="3" required></textarea>
-            <input type="text" name="category" placeholder="Category (e.g. Work, Personal)" required>
+        <div class="header">
+            <h1>📊 Quest Dashboard</h1>
+            <p>Track your progress and statistics</p>
+        </div>
 
-            <label>Priority:</label>
-            <select name="priority">
-                <option>Low</option>
-                <option>Medium</option>
-                <option>High</option>
-            </select>
+        <div class="nav">
+            <a href="index.php">All Quests</a>
+            <a href="dashboard.php">Dashboard</a>
+            <a href="add.php">Add New Quest</a>
+            <span style="color: white; margin-left: auto;">
+                Welcome, <?= htmlspecialchars($_SESSION['username']) ?>! 
+                <a href="logout.php" style="margin-left: 15px; background: rgba(255,255,255,0.3);">Logout</a>
+            </span>
+        </div>
 
-            <label>Due Date:</label>
-            <input type="date" name="due_date" required>
+        <!-- Statistics -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-number stat-total"><?= $total_tasks ?></div>
+                <div>Total Quests</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-completed"><?= $completed_tasks ?></div>
+                <div>Completed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number stat-pending"><?= $pending_tasks ?></div>
+                <div>Pending</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number"><?= $completion_percentage ?>%</div>
+                <div>Completion Rate</div>
+            </div>
+        </div>
 
-            <button type="submit">Add Task</button>
-        </form>
+        <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px; margin-bottom: 30px;">
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <h3>Overall Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: <?= $completion_percentage ?>%"></div>
+                </div>
+                <p style="text-align: center; margin-top: 10px; font-weight: 600;">
+                    <?= $completed_tasks ?> out of <?= $total_tasks ?> quests completed
+                </p>
+            </div>
 
-        <h3>Your Tasks</h3>
-        <table>
-            <tr>
-                <th>Title</th>
-                <th>Category</th>
-                <th>Priority</th>
-                <th>Due Date</th>
-                <th>Status</th>
-            </tr>
-            <?php while ($row = $tasks->fetch_assoc()): ?>
-                <tr>
-                    <td><?= htmlspecialchars($row["title"]) ?></td>
-                    <td><?= htmlspecialchars($row["category"]) ?></td>
-                    <td><?= htmlspecialchars($row["priority"]) ?></td>
-                    <td><?= htmlspecialchars($row["due_date"]) ?></td>
-                    <td class="<?= $row["status"] == 'Completed' ? 'status-completed' : 'status-pending' ?>">
-                        <?= htmlspecialchars($row["status"]) ?>
-                    </td>
-                </tr>
-            <?php endwhile; ?>
-        </table>
+            <!-- Priority Overview -->
+            <div class="progress-container">
+                <h3>Priority Distribution</h3>
+                <?php if(empty($priority_data)): ?>
+                    <p style="text-align: center; color: #64748b;">No tasks yet</p>
+                <?php else: ?>
+                    <?php foreach($priority_data as $priority): ?>
+                        <div style="margin-bottom: 10px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                                <span><?= $priority['priority'] ?></span>
+                                <span><?= $priority['count'] ?></span>
+                            </div>
+                            <div style="height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; background: <?= 
+                                    $priority['priority'] == 'High' ? 'var(--high)' : 
+                                    ($priority['priority'] == 'Medium' ? 'var(--medium)' : 'var(--low)') 
+                                ?>; width: <?= $total_tasks > 0 ? ($priority['count'] / $total_tasks * 100) : 0 ?>%"></div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                <?php endif; ?>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="chart-container">
+            <h3>Quest Status Distribution</h3>
+            <canvas id="statusChart" style="max-height: 300px;"></canvas>
+        </div>
+
+        <!-- Recent Quests -->
+        <div class="progress-container">
+            <h3>Recent Quests</h3>
+            <?php if(empty($recent_tasks)): ?>
+                <p style="text-align: center; color: #64748b;">No quests yet. <a href="add.php">Add your first quest!</a></p>
+            <?php else: ?>
+                <div class="quest-grid" style="grid-template-columns: 1fr;">
+                    <?php foreach($recent_tasks as $task): ?>
+                        <div class="quest-card <?= getPriorityClass($task['priority']) ?>">
+                            <div class="quest-header">
+                                <h3 class="quest-title"><?= htmlspecialchars($task['title']) ?></h3>
+                                <span class="quest-priority <?= getPriorityClass($task['priority']) ?>">
+                                    <?= $task['priority'] ?>
+                                </span>
+                            </div>
+                            <div class="quest-category">🏷️ <?= htmlspecialchars($task['category']) ?></div>
+                            <p class="quest-description"><?= htmlspecialchars($task['description']) ?></p>
+                            <div class="quest-meta">
+                                <span class="quest-status <?= getStatusClass($task['status']) ?>">
+                                    <?= $task['status'] ?>
+                                </span>
+                                <span class="quest-due">
+                                    <?php if($task['due_date']): ?>
+                                        📅 <?= date('M j, Y', strtotime($task['due_date'])) ?>
+                                    <?php else: ?>
+                                        No due date
+                                    <?php endif; ?>
+                                </span>
+                            </div>
+                            <div class="quest-actions">
+                                <?php if($task['status'] == 'Pending'): ?>
+                                    <a href="edit.php?complete=<?= $task['id'] ?>" class="btn btn-complete">Complete</a>
+                                <?php endif; ?>
+                                <a href="edit.php?id=<?= $task['id'] ?>" class="btn btn-edit">Edit</a>
+                                <a href="delete.php?id=<?= $task['id'] ?>" class="btn btn-delete" 
+                                   onclick="return confirm('Are you sure you want to delete this quest?')">Delete</a>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
     </div>
-</body>
 
+    <script>
+        // Chart for status distribution
+        const ctx = document.getElementById('statusChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Completed', 'Pending'],
+                datasets: [{
+                    data: [<?= $completed_tasks ?>, <?= $pending_tasks ?>],
+                    backgroundColor: ['#10b981', '#f59e0b'],
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
 </html>

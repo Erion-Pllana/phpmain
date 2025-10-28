@@ -1,22 +1,36 @@
 <?php
-session_start();
+include 'config.php';
 
-// Dummy credentials for demo (replace with DB in production)
-$valid_username = "admin";
-$valid_password = "12345";
+// Redirect if already logged in
+if (isLoggedIn()) {
+    header('Location: index.php');
+    exit;
+}
 
-$error = "";
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $username = trim($_POST['username']);
+    $password = $_POST['password'];
 
-if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $username = $_POST["username"] ?? "";
-    $password = $_POST["password"] ?? "";
+    $errors = [];
 
-    if ($username === $valid_username && $password === $valid_password) {
-        $_SESSION["user"] = $username;
-        header("Location: dashboard.php");
-        exit();
-    } else {
-        $error = "Invalid username or password!";
+    if (empty($username) || empty($password)) {
+        $errors[] = "Please enter both username and password.";
+    }
+
+    if (empty($errors)) {
+        $stmt = $pdo->prepare("SELECT id, username, password FROM users WHERE username = ? OR email = ?");
+        $stmt->execute([$username, $username]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        if ($user && password_verify($password, $user['password'])) {
+            $_SESSION['user_id'] = $user['id'];
+            $_SESSION['username'] = $user['username'];
+            $_SESSION['success'] = "Welcome back, " . $user['username'] . "!";
+            header('Location: index.php');
+            exit;
+        } else {
+            $errors[] = "Invalid username or password.";
+        }
     }
 }
 ?>
@@ -25,100 +39,93 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>TaskFlow | Login</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;500;600&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Quest Tracker</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        * {
-            box-sizing: border-box;
-            font-family: 'Poppins', sans-serif;
+        .auth-container {
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 0 20px;
         }
-        body {
-            margin: 0;
-            height: 100vh;
-            background: linear-gradient(135deg, #6B73FF, #000DFF);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .container {
+        .auth-card {
             background: white;
             padding: 40px;
             border-radius: 15px;
-            width: 360px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .auth-header {
             text-align: center;
-            animation: fadeIn 0.6s ease;
+            margin-bottom: 30px;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        h2 {
-            margin-bottom: 15px;
-            color: #000DFF;
-        }
-        p.subtitle {
-            color: #555;
-            font-size: 14px;
-            margin-bottom: 25px;
-        }
-        input {
-            width: 100%;
-            padding: 12px;
-            margin: 10px 0;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            outline: none;
-            transition: 0.3s;
-        }
-        input:focus {
-            border-color: #000DFF;
-            box-shadow: 0 0 5px rgba(0, 13, 255, 0.3);
-        }
-        button {
-            background: #000DFF;
-            color: white;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:hover {
-            background: #6B73FF;
-        }
-        .error {
-            color: red;
-            font-size: 14px;
+        .auth-header h1 {
+            color: var(--dark);
             margin-bottom: 10px;
         }
-        footer {
+        .auth-footer {
+            text-align: center;
             margin-top: 20px;
-            font-size: 13px;
-            color: #777;
+            color: #64748b;
+        }
+        .error-message {
+            background: #fee2e2;
+            color: #dc2626;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #dc2626;
+        }
+        .success-message {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #10b981;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>🗓️ TaskFlow</h2>
-        <p class="subtitle">Manage your daily tasks with ease</p>
+    <div class="auth-container">
+        <div class="auth-card">
+            <div class="auth-header">
+                <h1>🔑 Login</h1>
+                <p>Welcome back to Quest Tracker!</p>
+            </div>
 
-        <?php if ($error): ?>
-            <div class="error"><?= htmlspecialchars($error) ?></div>
-        <?php endif; ?>
+            <?php if(isset($_SESSION['success'])): ?>
+                <div class="success-message">
+                    <?= $_SESSION['success'] ?>
+                    <?php unset($_SESSION['success']); ?>
+                </div>
+            <?php endif; ?>
 
-        <form method="POST" action="">
-            <input type="text" name="username" placeholder="Username" required>
-            <input type="password" name="password" placeholder="Password" required>
-            <button type="submit">Log In</button>
-        </form>
+            <?php if(!empty($errors)): ?>
+                <div class="error-message">
+                    <?php foreach($errors as $error): ?>
+                        <p><?= $error ?></p>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
 
-        <footer>
-            <p>Don’t have an account? <a href="#" style="color:#000DFF; text-decoration:none;">Sign up</a></p>
-        </footer>
+            <form method="POST">
+                <div class="form-group">
+                    <label for="username">Username or Email</label>
+                    <input type="text" id="username" name="username" value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+
+                <button type="submit" class="btn btn-add" style="width: 100%; padding: 12px;">Login</button>
+            </form>
+
+            <div class="auth-footer">
+                <p>Don't have an account? <a href="signup.php">Sign up here</a></p>
+            </div>
+        </div>
     </div>
 </body>
 </html>
