@@ -1,35 +1,55 @@
 <?php
 include 'config.php';
 
-// Redirect if already logged in
+// Redirect if logged in
 if (isLoggedIn()) {
     header('Location: index.php');
     exit;
 }
 
+$errors = [];
+$success = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
+    $email = trim($_POST['email']);
     $password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
 
-    $errors = [];
+    // Validation
+    if (empty($username) || empty($email) || empty($password) || empty($confirm_password)) {
+        $errors[] = "All fields are required.";
+    }
 
-    if (empty($username) || empty($password)) {
-        $errors[] = "Please enter both username and password.";
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errors[] = "Please enter a valid email address.";
+    }
+
+    if ($password !== $confirm_password) {
+        $errors[] = "Passwords do not match.";
+    }
+
+    if (strlen($password) < 6) {
+        $errors[] = "Password must be at least 6 characters.";
     }
 
     if (empty($errors)) {
-        $stmt = $pdo->prepare("SELECT id, username, password FROM users WHERE username = ? OR email = ?");
-        $stmt->execute([$username, $username]);
-        $user = $stmt->fetch(PDO::FETCH_ASSOC);
-
-        if ($user && password_verify($password, $user['password'])) {
-            $_SESSION['user_id'] = $user['id'];
-            $_SESSION['username'] = $user['username'];
-            $_SESSION['success'] = "Welcome back, " . $user['username'] . "!";
-            header('Location: index.php');
-            exit;
+        // Check if username or email already exist
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE username = ? OR email = ?");
+        $stmt->execute([$username, $email]);
+        if ($stmt->fetch()) {
+            $errors[] = "Username or email already taken.";
         } else {
-            $errors[] = "Invalid username or password.";
+            // Insert new user
+            $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+            $stmt = $pdo->prepare("INSERT INTO users (username, email, password) VALUES (?, ?, ?)");
+            if ($stmt->execute([$username, $email, $hashed_password])) {
+                $_SESSION['success'] = "Account created successfully! You can now log in.";
+                header('Location: login.php');
+                exit;
+            } else {
+                $errors[] = "Something went wrong. Please try again.";
+            }
         }
     }
 }
@@ -39,7 +59,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Task Tracker</title>
+    <title>Sign Up - Task Tracker</title>
     <style>
         /* Google Font */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
@@ -72,7 +92,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             overflow: hidden;
         }
 
-        /* Smooth Fade-In Animation */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
@@ -90,7 +109,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-            transform: scale(1);
             transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
@@ -102,12 +120,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         .auth-header {
             text-align: center;
             margin-bottom: 30px;
-            color: var(--black);
         }
 
         .auth-header h1 {
             font-size: 2rem;
             font-weight: 700;
+            color: var(--black);
             margin-bottom: 10px;
         }
 
@@ -158,13 +176,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             transition: all 0.3s ease;
         }
 
-        /* Hover: turns dark gray instead of blue */
         .btn:hover {
             background: var(--dark-gray);
             transform: translateY(-2px);
         }
 
-        /* Messages */
         .error-message, .success-message {
             padding: 12px;
             border-radius: 10px;
@@ -202,7 +218,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             color: var(--accent);
         }
 
-        /* Floating glow background effect */
         .background-glow {
             position: absolute;
             width: 400px;
@@ -226,30 +241,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <div class="auth-container">
         <div class="auth-card">
             <div class="auth-header">
-                <h1>Welcome Back</h1>
-                <p>Login to your Task Tracker</p>
+                <h1>Create Account</h1>
+                <p>Sign up to get started with Task Tracker</p>
             </div>
 
-            <?php if(isset($_SESSION['success'])): ?>
-                <div class="success-message">
-                    <?= $_SESSION['success'] ?>
-                    <?php unset($_SESSION['success']); ?>
-                </div>
-            <?php endif; ?>
-
-            <?php if(!empty($errors)): ?>
+            <?php if (!empty($errors)): ?>
                 <div class="error-message">
-                    <?php foreach($errors as $error): ?>
+                    <?php foreach ($errors as $error): ?>
                         <p><?= htmlspecialchars($error) ?></p>
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
 
+            <?php if ($success): ?>
+                <div class="success-message">
+                    <?= htmlspecialchars($success) ?>
+                </div>
+            <?php endif; ?>
+
             <form method="POST">
                 <div class="form-group">
-                    <label for="username">Username or Email</label>
+                    <label for="username">Username</label>
                     <input type="text" id="username" name="username" 
                         value="<?= htmlspecialchars($_POST['username'] ?? '') ?>" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" name="email" 
+                        value="<?= htmlspecialchars($_POST['email'] ?? '') ?>" required>
                 </div>
 
                 <div class="form-group">
@@ -257,11 +277,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <input type="password" id="password" name="password" required>
                 </div>
 
-                <button type="submit" class="btn">Login</button>
+                <div class="form-group">
+                    <label for="confirm_password">Confirm Password</label>
+                    <input type="password" id="confirm_password" name="confirm_password" required>
+                </div>
+
+                <button type="submit" class="btn">Sign Up</button>
             </form>
 
             <div class="auth-footer">
-                <p>Don’t have an account? <a href="signup.php">Sign up</a></p>
+                <p>Already have an account? <a href="login.php">Log in</a></p>
             </div>
         </div>
     </div>
