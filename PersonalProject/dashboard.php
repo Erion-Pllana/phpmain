@@ -48,10 +48,9 @@ if ($role === 'admin') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Task Dashboard</title>
+    <title>Dashboard</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        /* === Keep your previous CSS exactly as it was === */
         body {
             font-family: 'Poppins', sans-serif;
             background: #0a0a0a;
@@ -113,7 +112,6 @@ if ($role === 'admin') {
 
         .stat-card {
             background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
             border-radius: 18px;
             padding: 25px;
             text-align: center;
@@ -135,13 +133,7 @@ if ($role === 'admin') {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 18px;
             padding: 25px;
-            backdrop-filter: blur(10px);
-            transition: 0.3s ease;
             margin-bottom: 40px;
-        }
-
-        .progress-container:hover {
-            background: rgba(255, 255, 255, 0.1);
         }
 
         .progress-bar {
@@ -162,7 +154,6 @@ if ($role === 'admin') {
             background: rgba(255, 255, 255, 0.05);
             padding: 25px;
             border-radius: 18px;
-            backdrop-filter: blur(10px);
             margin-bottom: 40px;
         }
 
@@ -171,12 +162,6 @@ if ($role === 'admin') {
             border-radius: 16px;
             padding: 20px;
             margin-bottom: 15px;
-            transition: 0.3s ease;
-        }
-
-        .task-card:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: scale(1.02);
         }
 
         .task-card h3 {
@@ -197,6 +182,12 @@ if ($role === 'admin') {
             margin-top: 10px;
         }
 
+        .quest-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+        }
+
         .btn {
             background: rgba(255, 255, 255, 0.15);
             color: #fff;
@@ -211,12 +202,6 @@ if ($role === 'admin') {
         .btn:hover {
             background: #22d3ee;
             transform: scale(1.05);
-        }
-
-        .quest-actions {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
         }
 
         .btn-edit,
@@ -254,8 +239,8 @@ if ($role === 'admin') {
 <body>
     <div class="container">
         <div class="header">
-            <h1>Task Dashboard</h1>
-            <p>Track your progress and statistics</p>
+            <h1>Dashboard</h1>
+            <p>Track your progress and stats</p>
         </div>
 
         <div class="nav">
@@ -316,6 +301,7 @@ if ($role === 'admin') {
                             <span>Due:
                                 <?= $task['due_date'] ? date('M j, Y', strtotime($task['due_date'])) : 'No due date' ?></span>
                         </div>
+
                         <?php if ($role === 'admin'): ?>
                             <div class="quest-actions">
                                 <?php if ($task['status'] === 'Pending'): ?>

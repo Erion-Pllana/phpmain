@@ -2,23 +2,27 @@
 session_start();
 include 'config.php';
 
-// Ensure user is logged in and is admin
+// Ensure user is logged in (allow both admin & normal users)
 requireLogin();
-requireAdmin();
+
+// Get current user info
+$user_id = $_SESSION['user_id'];
+$role    = $_SESSION['role'] ?? 'user';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $title = trim($_POST['title']);
+    $title       = trim($_POST['title']);
     $description = trim($_POST['description']);
-    $category = trim($_POST['category']);
-    $priority = $_POST['priority'];
-    $due_date = $_POST['due_date'] ?? null;
-    $status = 'Pending';
+    $category    = trim($_POST['category']);
+    $priority    = $_POST['priority'];
+    $due_date    = $_POST['due_date'] ?? null;
+    $status      = 'Pending';
 
+    // Link the task to the current user
     $sql = "INSERT INTO tasks (title, description, category, priority, due_date, status, created_at, user_id)
             VALUES (?, ?, ?, ?, ?, ?, NOW(), ?)";
     $stmt = $pdo->prepare($sql);
 
-    if ($stmt->execute([$title, $description, $category, $priority, $due_date, $status, $_SESSION['user_id']])) {
+    if ($stmt->execute([$title, $description, $category, $priority, $due_date, $status, $user_id])) {
         header('Location: index.php?message=Task added successfully!');
         exit;
     } else {
@@ -245,5 +249,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         </div>
     </div>
 </body>
-
 </html>
