@@ -4,42 +4,22 @@ requireLogin();
 
 $user_id = getCurrentUserId();
 $username = $_SESSION['username'] ?? 'User';
-$role = $_SESSION['role'] ?? 'user'; // 'admin' or 'user'
+$role = $_SESSION['role'] ?? 'user';
 
 // ---------------------------
 // Fetch statistics
 // ---------------------------
-if ($role === 'admin') {
-    $total_tasks = $pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
-    $completed_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE status = 'Completed'")->fetchColumn();
-    $pending_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE status = 'Pending'")->fetchColumn();
-} else {
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE user_id = ?");
-    $stmt->execute([$user_id]);
-    $total_tasks = $stmt->fetchColumn();
-
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE status = 'Completed' AND user_id = ?");
-    $stmt->execute([$user_id]);
-    $completed_tasks = $stmt->fetchColumn();
-
-    $stmt = $pdo->prepare("SELECT COUNT(*) FROM tasks WHERE status = 'Pending' AND user_id = ?");
-    $stmt->execute([$user_id]);
-    $pending_tasks = $stmt->fetchColumn();
-}
+$total_tasks = $pdo->query("SELECT COUNT(*) FROM tasks")->fetchColumn();
+$completed_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE status = 'Completed'")->fetchColumn();
+$pending_tasks = $pdo->query("SELECT COUNT(*) FROM tasks WHERE status = 'Pending'")->fetchColumn();
 
 $completion_percentage = $total_tasks > 0 ? round(($completed_tasks / $total_tasks) * 100) : 0;
 
 // ---------------------------
-// Fetch recent tasks
+// Fetch recent tasks (everyone can see all)
 // ---------------------------
-if ($role === 'admin') {
-    $recent_stmt = $pdo->query("SELECT * FROM tasks ORDER BY created_at DESC LIMIT 5");
-    $recent_tasks = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
-} else {
-    $recent_stmt = $pdo->prepare("SELECT * FROM tasks WHERE user_id = ? ORDER BY created_at DESC LIMIT 5");
-    $recent_stmt->execute([$user_id]);
-    $recent_tasks = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
-}
+$recent_stmt = $pdo->query("SELECT * FROM tasks ORDER BY created_at DESC LIMIT 5");
+$recent_tasks = $recent_stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -246,9 +226,7 @@ if ($role === 'admin') {
         <div class="nav">
             <a href="index.php">All Tasks</a>
             <a href="dashboard.php">Dashboard</a>
-            <?php if ($role === 'admin'): ?>
-                <a href="add.php">Add New Task</a>
-            <?php endif; ?>
+            <a href="add.php">Add New Task</a>
             <span style="margin-left:auto;color:white;">Welcome, <?= htmlspecialchars($username) ?> |
                 <a href="logout.php" class="btn">Logout</a>
             </span>
@@ -278,8 +256,7 @@ if ($role === 'admin') {
             <div class="progress-bar">
                 <div class="progress-fill" style="width: <?= $completion_percentage ?>%"></div>
             </div>
-            <p style="text-align:center;margin-top:10px;"><?= $completed_tasks ?> of <?= $total_tasks ?> tasks completed
-            </p>
+            <p style="text-align:center;margin-top:10px;"><?= $completed_tasks ?> of <?= $total_tasks ?> tasks completed</p>
         </div>
 
         <div class="chart-container">
@@ -295,23 +272,23 @@ if ($role === 'admin') {
                 <?php foreach ($recent_tasks as $task): ?>
                     <div class="task-card">
                         <h3><?= htmlspecialchars($task['title']) ?></h3>
-                        <p><?= htmlspecialchars($task['description']) ?></p>
+                        <p><?= htmlspecialchars($task['description'] ?? '') ?></p>
                         <div class="task-meta">
                             <span>Status: <?= htmlspecialchars($task['status']) ?></span>
-                            <span>Due:
-                                <?= $task['due_date'] ? date('M j, Y', strtotime($task['due_date'])) : 'No due date' ?></span>
+                            <span>Due: <?= $task['due_date'] ? date('M j, Y', strtotime($task['due_date'])) : 'No due date' ?></span>
                         </div>
 
-                        <?php if ($role === 'admin'): ?>
-                            <div class="quest-actions">
+                        <div class="quest-actions">
+                            <?php if ($task['user_id'] == $user_id || $role === 'admin'): ?>
                                 <?php if ($task['status'] === 'Pending'): ?>
                                     <a href="edit.php?complete=<?= $task['id'] ?>" class="btn-complete">Complete</a>
                                 <?php endif; ?>
                                 <a href="edit.php?id=<?= $task['id'] ?>" class="btn-edit">Edit</a>
-                                <a href="delete.php?id=<?= $task['id'] ?>" class="btn-delete"
-                                    onclick="return confirm('Delete this task?')">Delete</a>
-                            </div>
-                        <?php endif; ?>
+                                <a href="delete.php?id=<?= $task['id'] ?>" class="btn-delete" onclick="return confirm('Delete this task?')">Delete</a>
+                            <?php else: ?>
+                                <span style="color:#888;font-size:0.9em;">You can’t edit this task</span>
+                            <?php endif; ?>
+                        </div>
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
@@ -333,7 +310,12 @@ if ($role === 'admin') {
             },
             options: {
                 plugins: {
-                    legend: { labels: { color: '#fff' }, position: 'bottom' }
+                    legend: {
+                        labels: {
+                            color: '#fff'
+                        },
+                        position: 'bottom'
+                    }
                 }
             }
         });

@@ -268,9 +268,7 @@ $categories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         <div class="nav">
             <a href="index.php">All tasks</a>
             <a href="dashboard.php">Dashboard</a>
-            <?php if ($role === 'admin'): ?>
-                <a href="add.php">Add New Task</a>
-            <?php endif; ?>
+            <a href="add.php">Add New Task</a>
             <span style="color:#aaa; margin-left:auto;">
                 Welcome, <?= htmlspecialchars($username) ?> |
                 <a href="logout.php" style="color:#00bfff;">Logout</a>
@@ -306,11 +304,11 @@ $categories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
         <div class="quest-grid">
             <?php if (empty($tasks)): ?>
                 <div class="no-quests" style="grid-column:1 / -1;text-align:center;">
-                    <h3>No tasks found. <?php if ($role === 'admin'): ?><a href="add.php">Add your first
-                                task!</a><?php endif; ?></h3>
+                    <h3>No tasks found. <a href="add.php">Add your first task!</a></h3>
                 </div>
             <?php else: ?>
                 <?php foreach ($tasks as $task): ?>
+                    <?php $isOwner = ($task['user_id'] == $user_id); ?>
                     <div class="quest-card <?= getPriorityClass($task['priority']) ?>">
                         <div class="quest-header">
                             <div>
@@ -329,8 +327,7 @@ $categories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                             <?php endif; ?>
                         </div>
 
-                        <!-- Admin-only buttons -->
-                        <?php if ($role === 'admin'): ?>
+                        <?php if ($role === 'admin' || $isOwner): ?>
                             <div class="quest-actions">
                                 <?php if ($task['status'] == 'Pending'): ?>
                                     <a href="edit.php?complete=<?= $task['id'] ?>" class="btn-complete">Complete</a>
@@ -340,17 +337,14 @@ $categories = $catStmt->fetchAll(PDO::FETCH_COLUMN);
                                     onclick="return confirm('Delete this task?')">Delete</a>
                             </div>
                         <?php endif; ?>
-
                     </div>
                 <?php endforeach; ?>
             <?php endif; ?>
         </div>
 
-        <?php if ($role === 'admin'): ?>
-            <div style="text-align:center; margin-top:35px;">
-                <a href="add.php" class="btn-add">➕ Add New Task</a>
-            </div>
-        <?php endif; ?>
+        <div style="text-align:center; margin-top:35px;">
+            <a href="add.php" class="btn-add">➕ Add New Task</a>
+        </div>
     </div>
 </body>
 
