@@ -1,6 +1,6 @@
 <?php
 $host = 'localhost';
-$dbname = 'task_tracker';
+$dbname = 'tasktracker';
 $username = 'root';
 $password = '';
 

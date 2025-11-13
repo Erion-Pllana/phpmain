@@ -5,7 +5,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 $host = 'localhost';
-$dbname = 'task_tracker';
+$dbname = 'tasktracker'; // updated database name
 $username = 'root';
 $password = '';
 
