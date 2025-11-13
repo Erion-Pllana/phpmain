@@ -68,7 +68,26 @@ if ($role === 'admin' && isset($_GET['approve'], $_GET['id'])) {
     header("Location: index.php");
     exit;
 }
+
+// ✅ Handle "Complete" action
+if (isset($_GET['complete'])) {
+    $task_id = (int) $_GET['complete'];
+
+    // Verify ownership or admin rights
+    $stmt = $pdo->prepare("SELECT user_id FROM tasks WHERE id = ?");
+    $stmt->execute([$task_id]);
+    $task = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($task && ($role === 'admin' || $task['user_id'] == $user_id)) {
+        $stmt = $pdo->prepare("UPDATE tasks SET status = 'Completed' WHERE id = ?");
+        $stmt->execute([$task_id]);
+    }
+
+    header("Location: index.php?message=Task+marked+as+completed!");
+    exit;
+}
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">

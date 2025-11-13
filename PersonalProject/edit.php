@@ -6,7 +6,24 @@ requireLogin();
 $user_id = $_SESSION['user_id'];
 $role = $_SESSION['role'] ?? 'user';
 
-// Get task ID
+// ✅ Handle "Complete" action FIRST
+if (isset($_GET['complete'])) {
+    $complete_id = (int) $_GET['complete'];
+
+    // Check task ownership or admin
+    $stmt = $pdo->prepare("SELECT user_id FROM tasks WHERE id = ?");
+    $stmt->execute([$complete_id]);
+    $task = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($task && ($role === 'admin' || $task['user_id'] == $user_id)) {
+        $pdo->prepare("UPDATE tasks SET status = 'Completed' WHERE id = ?")->execute([$complete_id]);
+    }
+
+    header("Location: index.php?message=Task+marked+as+completed!");
+    exit;
+}
+
+// 🧩 Only run edit logic if ?id= is set
 $id = $_GET['id'] ?? null;
 if (!$id) {
     header('Location: index.php');
@@ -47,6 +64,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 ?>
+
+
 
 <!DOCTYPE html>
 <html lang="en">
